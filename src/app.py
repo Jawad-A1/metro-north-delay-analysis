@@ -9,7 +9,7 @@ import streamlit as st
 
 from src import trends
 from src.predict import BRANCHES, get_current_time, infer_period
-from src.mta_live import MtaLiveError, fetch_feed, find_live_delays
+from src.mta_live import MtaLiveError, fetch_feed, find_live_delays, format_time, next_stop_per_trip
 from src.stops import load_stop_names
 
 st.set_page_config(page_title="Metro-North Delay Predictor", page_icon="🚆", layout="centered")
@@ -49,17 +49,17 @@ try:
     live_delays = get_live_delays(branch, cache_bust)
     if live_delays:
         stop_names = get_stop_names()
-        seen_trips = {}
-        for d in live_delays:
-            seen_trips.setdefault(d["trip_id"], d)
+        next_stops = next_stop_per_trip(live_delays, now)
         live_df = pd.DataFrame(
             [
                 {
                     "Train": d["train_label"] or d["trip_id"],
                     "Next stop": stop_names.get(d["stop_id"], d["stop_id"]),
+                    "Scheduled": format_time(d["scheduled_time"]) if d["scheduled_time"] else "—",
+                    "Estimated": format_time(d["estimated_time"]) if d["estimated_time"] else "—",
                     "Minutes late": d["delay_minutes"],
                 }
-                for d in seen_trips.values()
+                for d in next_stops
             ]
         ).sort_values("Minutes late", ascending=False)
         st.dataframe(live_df, hide_index=True, width="stretch")

@@ -15,7 +15,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from src import trends
-from src.mta_live import MtaLiveError, fetch_feed, find_live_delays
+from src.mta_live import MtaLiveError, fetch_feed, find_live_delays, format_time, next_stop_per_trip
 from src.stops import load_stop_names
 
 NY_TZ = ZoneInfo("America/New_York")
@@ -63,6 +63,7 @@ def predict(branch: str, now: datetime, train_id: str | None = None) -> dict:
     return {
         "branch": branch,
         "now": now.isoformat(),
+        "now_dt": now,
         "period": period,
         "hour": hour,
         "live_delays": live_delays,
@@ -81,14 +82,18 @@ def render(result: dict) -> str:
     if result["live_delays"]:
         lines.append("LIVE: MTA feed reports active delays:")
         stop_names = load_stop_names()
-        seen_trips = {}
-        for d in result["live_delays"]:
-            seen_trips.setdefault(d["trip_id"], d)
-        for d in sorted(seen_trips.values(), key=lambda d: d["delay_minutes"], reverse=True):
+        next_stops = next_stop_per_trip(result["live_delays"], result["now_dt"])
+        for d in sorted(next_stops, key=lambda d: d["delay_minutes"], reverse=True):
             next_stop = stop_names.get(d["stop_id"], d["stop_id"])
+            time_info = ""
+            if d["estimated_time"]:
+                time_info = (
+                    f", due {format_time(d['estimated_time'])}"
+                    f" (scheduled {format_time(d['scheduled_time'])})"
+                )
             lines.append(
                 f"  - train {d['train_label'] or d['trip_id']} ({d['branch']}): "
-                f"{d['delay_minutes']} min late (next stop {next_stop})"
+                f"{d['delay_minutes']} min late (next stop {next_stop}{time_info})"
             )
     elif result["live_error"]:
         lines.append(f"LIVE: unavailable ({result['live_error']})")

@@ -33,7 +33,10 @@ This combines two signals:
 - **Live**: MTA's public Metro-North GTFS-realtime feed
   (`api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr%2Fgtfs-mnr`) - no API key needed.
   It reports actual per-train delays (in minutes) once MTA's backend has matched a train
-  to its schedule; trains running on time simply don't show up here.
+  to its schedule; trains running on time simply don't show up here. Each delayed train's
+  *next upcoming stop* is shown with its scheduled and estimated clock time (the same
+  numbers MTA's TrainTime app shows), taken from the feed's own predicted arrival time
+  rather than a static schedule lookup.
 - **Historical trend**: a relative delay-risk score (Low/Medium/High/Very High) per
   Branch/Period/hour, built in `src/trends.py`. Note the source CSV only logs delay
   *incidents* (Late/Cancelled/Terminated/Bus Substitution) - it has no record of
