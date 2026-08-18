@@ -1,36 +1,12 @@
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.io as pio
 import streamlit as st
+
+from src.theme import BLUE, CATEGORICAL, INK_SECONDARY, apply_plotly_theme
 
 DATA_PATH = "data/MTA_Metro-North_Delays__Beginning_2012_20260817.csv"
 
-# ---- Palette (fixed categorical order; sequential = blue) ----
-CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
-BLUE = "#2a78d6"
-SURFACE = "#fcfcfb"
-INK = "#0b0b0b"
-INK_SECONDARY = "#52514e"
-MUTED = "#898781"
-GRID = "#e1e0d9"
-AXIS = "#c3c2b7"
-
-FONT_FAMILY = "system-ui, -apple-system, 'Segoe UI', sans-serif"
-
-pio.templates["metro_north"] = go.layout.Template(
-    layout=go.Layout(
-        paper_bgcolor=SURFACE,
-        plot_bgcolor=SURFACE,
-        font=dict(family=FONT_FAMILY, color=INK, size=13),
-        title=dict(font=dict(color=INK, size=16)),
-        xaxis=dict(gridcolor=GRID, linecolor=AXIS, zerolinecolor=AXIS, tickfont=dict(color=MUTED)),
-        yaxis=dict(gridcolor=GRID, linecolor=AXIS, zerolinecolor=AXIS, tickfont=dict(color=MUTED)),
-        legend=dict(font=dict(color=INK_SECONDARY)),
-        margin=dict(l=10, r=10, t=40, b=10),
-        hoverlabel=dict(bgcolor=SURFACE, font=dict(family=FONT_FAMILY, color=INK)),
-    )
-)
-pio.templates.default = "metro_north"
+apply_plotly_theme()
 
 st.set_page_config(page_title="Metro-North Delay Analysis", page_icon="🚆", layout="wide")
 
