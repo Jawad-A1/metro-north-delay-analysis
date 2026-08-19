@@ -55,7 +55,7 @@ def get_stop_names():
 
 
 def _minutes_late_wash(value: float) -> str:
-    """Light background wash keyed to the fixed status ramp (never the sole cue —
+    """Light background wash keyed to the fixed status ramp (never the sole cue -
     the minutes-late number itself is always shown alongside it)."""
     if value >= 30:
         bg = STATUS["critical"]
@@ -72,13 +72,9 @@ def _minutes_late_wash(value: float) -> str:
 def render_live_status(branch: str) -> None:
     live_now = get_current_time()
     with st.container(border=True):
-        header_col, refresh_col = st.columns([4, 1])
-        header_col.subheader("Live status")
-        if refresh_col.button("↻ Refresh", width="stretch"):
-            get_live_delays.clear()  # bust the TTL cache so this click fetches fresh data
-            live_now = get_current_time()
+        st.subheader("Live status")
         st.caption(
-            f"Auto-refreshes every {LIVE_REFRESH_SECONDS}s — last checked "
+            f"Auto-refreshes every {LIVE_REFRESH_SECONDS}s - last checked "
             f"{live_now.strftime('%I:%M:%S %p')}"
         )
         try:
@@ -91,8 +87,8 @@ def render_live_status(branch: str) -> None:
                         {
                             "Train": d["train_label"] or d["trip_id"],
                             "Next stop": stop_names.get(d["stop_id"], d["stop_id"]),
-                            "Scheduled": format_time(d["scheduled_time"]) if d["scheduled_time"] else "—",
-                            "Estimated": format_time(d["estimated_time"]) if d["estimated_time"] else "—",
+                            "Scheduled": format_time(d["scheduled_time"]) if d["scheduled_time"] else "-",
+                            "Estimated": format_time(d["estimated_time"]) if d["estimated_time"] else "-",
                             "Minutes late": d["delay_minutes"],
                         }
                         for d in next_stops
@@ -140,7 +136,7 @@ with st.container(border=True):
     else:
         st.info("No historical data for this branch/period/hour combination.")
 
-    st.markdown(f"**Risk by hour — {branch}**")
+    st.markdown(f"**Risk by hour - {branch}**")
     branch_stats = stats[stats["Branch"] == branch]
     chart_df = branch_stats.pivot_table(index="Hour", columns="Period", values="risk_score", aggfunc="mean")
 
