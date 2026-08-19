@@ -45,8 +45,10 @@ This combines two signals:
 
 ## Files
 
-- `src/explore.py` - basic exploration of the raw CSV.
+- `app.py` - Streamlit dashboard for exploring the raw historical CSV (filters, KPIs, charts).
 - `src/trends.py` - builds the historical Branch/Period/hour delay-risk table.
 - `src/mta_live.py` - fetches and parses the MTA GTFS-realtime trip-update feed.
+- `src/stops.py` - maps GTFS stop_ids to station names, cached from MTA's static GTFS bundle.
 - `src/predict.py` - CLI that combines live + historical signals into a prediction.
-- `src/app.py` - Streamlit web UI wrapping the same prediction logic.
+- `src/app.py` - Streamlit web UI wrapping the same prediction logic, with auto-refreshing live status.
+- `src/theme.py` - shared color palette / Plotly theme used by both Streamlit apps.

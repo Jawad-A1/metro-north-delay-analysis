@@ -1,5 +1,5 @@
-pandas
-requests
-gtfs-realtime-bindings
-streamlit
-plotly
+pandas==2.3.3
+requests==2.34.2
+gtfs-realtime-bindings==2.2.0
+streamlit==1.61.1
+plotly==6.9.0
