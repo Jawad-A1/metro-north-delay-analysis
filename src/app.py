@@ -23,7 +23,7 @@ apply_plotly_theme()
 st.set_page_config(page_title="Metro-North Delay Predictor", layout="centered")
 
 st.title("Metro-North Delay Predictor")
-st.caption("Live MTA status plus a historical delay-risk trend, side by side.")
+st.caption("Live MTA status, a real historical delay probability, and a relative delay-risk trend, side by side.")
 
 branch = st.selectbox("Branch", BRANCHES)
 
@@ -46,6 +46,13 @@ def get_historical_stats():
     """Load and aggregate the historical delay-risk stats, cached for an hour."""
     df = trends.load_delay_data()
     return trends.build_hourly_branch_period_stats(df)
+
+
+@st.cache_data(ttl=3600)
+def get_otp_stats():
+    """Load and aggregate MTA's official on-time-performance stats, cached for an hour."""
+    df = trends.load_otp_data()
+    return trends.build_otp_period_stats(df)
 
 
 @st.cache_data(ttl=86400)
@@ -111,6 +118,28 @@ def render_live_status(branch: str) -> None:
 render_live_status(branch)
 
 with st.container(border=True):
+    st.subheader("Delay probability")
+    otp_stats = get_otp_stats()
+    prob = trends.lookup_delay_probability(otp_stats, branch=branch, period=period)
+
+    if prob:
+        col1, col2 = st.columns(2)
+        col1.metric(f"{prob['period']} delay probability", f"{prob['delay_probability_pct']}%")
+        col2.metric("Avg on-time performance", f"{prob['avg_on_time_pct']}%")
+        proxy_note = (
+            f" Proxied via the combined {prob['otp_branch']} Line figure "
+            "(MTA's OTP dataset doesn't break out this sub-branch)."
+            if prob["is_proxied"]
+            else ""
+        )
+        st.caption(
+            f"Based on {prob['months']} months of MTA's official On-Time Performance data "
+            f"(arrivals within 5:59 of schedule).{proxy_note}"
+        )
+    else:
+        st.info("No on-time-performance data for this branch/period.")
+
+with st.container(border=True):
     st.subheader("Historical trend")
     stats = get_historical_stats()
     row = trends.lookup_risk(stats, branch=branch, period=period, hour=hour)
@@ -122,7 +151,7 @@ with st.container(border=True):
                 padding:6px 14px;border-radius:999px;background:{color}1a;
                 border:1px solid {color}55;font-weight:600;color:var(--text-color);
                 margin-bottom:8px;">
-                <span>{icon}</span><span>{row['risk_tier']} delay risk</span>
+                <span>{icon}</span><span>{row['risk_tier']} relative risk</span>
                 </div>""",
             unsafe_allow_html=True,
         )
@@ -130,8 +159,9 @@ with st.container(border=True):
         col1.metric("Historical delay incidents in this slot", row["incident_count"])
         col2.metric("Avg minutes late when delayed", row["avg_minutes_late"])
         st.caption(
-            "This is a relative risk score, not a probability - the source data only "
-            "logs delay incidents (Late/Cancelled/Terminated/Bus Substitution), not on-time trips."
+            "This is a relative frequency score across hours, not a probability - the "
+            "incident log only records delay incidents (Late/Cancelled/Terminated/Bus "
+            "Substitution), not on-time trips. See Delay probability above for a true probability."
         )
     else:
         st.info("No historical data for this branch/period/hour combination.")

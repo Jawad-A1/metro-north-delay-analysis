@@ -62,6 +62,10 @@ def predict(branch: str, now: datetime, train_id: str | None = None) -> dict:
     stats = trends.build_hourly_branch_period_stats(df)
     historical = trends.lookup_risk(stats, branch=branch, period=period, hour=hour)
 
+    otp_df = trends.load_otp_data()
+    otp_stats = trends.build_otp_period_stats(otp_df)
+    probability = trends.lookup_delay_probability(otp_stats, branch=branch, period=period)
+
     return {
         "branch": branch,
         "now": now.isoformat(),
@@ -71,6 +75,7 @@ def predict(branch: str, now: datetime, train_id: str | None = None) -> dict:
         "live_delays": live_delays,
         "live_error": live_error,
         "historical": historical,
+        "probability": probability,
     }
 
 
@@ -105,17 +110,31 @@ def render(result: dict) -> str:
 
     lines.append("")
 
+    p = result["probability"]
+    if p:
+        proxy_note = f" (proxied via the combined {p['otp_branch']} Line figure)" if p["is_proxied"] else ""
+        lines.append(
+            f"DELAY PROBABILITY: {p['delay_probability_pct']}% for {p['branch']} during "
+            f"{p['period']}{proxy_note}, based on {p['avg_on_time_pct']}% average on-time "
+            f"performance across {p['months']} months of MTA's official OTP data."
+        )
+    else:
+        lines.append("DELAY PROBABILITY: no on-time-performance data for this branch/period.")
+
+    lines.append("")
+
     h = result["historical"]
     if h:
         lines.append(
-            f"HISTORICAL TREND: {h['risk_tier']} delay risk for {h['branch']} during "
+            f"HISTORICAL TREND: {h['risk_tier']} relative risk for {h['branch']} during "
             f"{h['period']} around {h['hour']}:00 "
             f"({h['incident_count']} historical delay incidents in this slot, "
             f"averaging {h['avg_minutes_late']} min late when delayed)."
         )
         lines.append(
-            "Note: this is a relative risk score, not a probability - the source data "
-            "only logs delay incidents, not on-time trips."
+            "Note: this is a relative frequency score across hours, not a probability - the "
+            "incident log only records delay incidents, not on-time trips. See DELAY "
+            "PROBABILITY above for a true probability."
         )
     else:
         lines.append("HISTORICAL TREND: no historical data for this branch/period/hour combination.")
