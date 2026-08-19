@@ -12,7 +12,7 @@ from src import trends
 from src.predict import BRANCHES, get_current_time, infer_period
 from src.mta_live import MtaLiveError, fetch_feed, find_live_delays, format_time, next_stop_per_trip
 from src.stops import load_stop_names
-from src.theme import CATEGORICAL, INK, INK_SECONDARY, STATUS, apply_plotly_theme, risk_tier_style
+from src.theme import CATEGORICAL, INK_SECONDARY, STATUS, apply_plotly_theme, risk_tier_style
 
 PERIOD_ORDER = ["AM Peak", "PM Peak", "Off-Peak"]
 PERIOD_COLORS = dict(zip(PERIOD_ORDER, CATEGORICAL))
@@ -120,7 +120,7 @@ with st.container(border=True):
         st.markdown(
             f"""<div style="display:inline-flex;align-items:center;gap:8px;
                 padding:6px 14px;border-radius:999px;background:{color}1a;
-                border:1px solid {color}55;font-weight:600;color:{INK};
+                border:1px solid {color}55;font-weight:600;color:var(--text-color);
                 margin-bottom:8px;">
                 <span>{icon}</span><span>{row['risk_tier']} delay risk</span>
                 </div>""",
