@@ -8,7 +8,7 @@ DATA_PATH = "data/MTA_Metro-North_Delays__Beginning_2012_20260817.csv"
 
 apply_plotly_theme()
 
-st.set_page_config(page_title="Metro-North Delay Analysis", page_icon="🚆", layout="wide")
+st.set_page_config(page_title="Metro-North Delay Analysis", layout="wide")
 
 
 @st.cache_data
@@ -63,7 +63,7 @@ mask = (
 )
 fdf = df[mask]
 
-st.title("🚆 Metro-North Delay Analysis")
+st.title("Metro-North Delay Analysis")
 st.caption(
     f"{len(fdf):,} incidents from {start_date:%b %d, %Y} to {end_date:%b %d, %Y} "
     f"across {fdf['Branch'].nunique()} branches"

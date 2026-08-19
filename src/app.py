@@ -20,9 +20,9 @@ LIVE_REFRESH_SECONDS = 30
 
 apply_plotly_theme()
 
-st.set_page_config(page_title="Metro-North Delay Predictor", page_icon="🚆", layout="centered")
+st.set_page_config(page_title="Metro-North Delay Predictor", layout="centered")
 
-st.title("🚆 Metro-North Delay Predictor")
+st.title("Metro-North Delay Predictor")
 st.caption("Live MTA status plus a historical delay-risk trend, side by side.")
 
 branch = st.selectbox("Branch", BRANCHES)
@@ -98,7 +98,10 @@ def render_live_status(branch: str) -> None:
 
                 col_count, col_table = st.columns([1, 4])
                 col_count.metric("Delayed trains", len(live_df))
-                styled = live_df.style.map(_minutes_late_wash, subset=["Minutes late"])
+                styled = (
+                    live_df.style.map(_minutes_late_wash, subset=["Minutes late"])
+                    .format({"Minutes late": "{:.1f} min"})
+                )
                 col_table.dataframe(styled, hide_index=True, width="stretch")
             else:
                 st.success(f"No active delays reported for {branch} right now.")
