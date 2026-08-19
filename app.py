@@ -1,3 +1,9 @@
+"""Streamlit dashboard for exploring historical Metro-North delay incidents.
+
+Run with:
+    streamlit run app.py
+"""
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -13,6 +19,7 @@ st.set_page_config(page_title="Metro-North Delay Analysis", layout="wide")
 
 @st.cache_data
 def load_data(path: str) -> pd.DataFrame:
+    """Load the delay CSV and parse its date/numeric columns."""
     df = pd.read_csv(path)
     df["Service Date"] = pd.to_datetime(df["Service Date"], format="%m/%d/%Y")
     df["Minutes Late"] = pd.to_numeric(df["Minutes Late"], errors="coerce")
@@ -57,6 +64,7 @@ mask = (
     & (df["Status"].isin(statuses))
     & (df["Delay Category"].isin(categories))
     & (
+        # Keep rows with no recorded minutes (e.g. cancellations) regardless of the slider.
         df["Minutes Late"].isna()
         | df["Minutes Late"].between(minutes_range[0], minutes_range[1])
     )
@@ -87,7 +95,7 @@ st.divider()
 # ---------------- Trend over time ----------------
 st.subheader("Incidents over time")
 freq_label = st.radio("Aggregate by", ["Month", "Year"], horizontal=True, label_visibility="collapsed")
-freq = "ME" if freq_label == "Month" else "YE"
+freq = "ME" if freq_label == "Month" else "YE"  # pandas resample codes: month-end / year-end
 trend = fdf.set_index("Service Date").resample(freq).size().reset_index(name="Incidents")
 
 fig_trend = go.Figure(

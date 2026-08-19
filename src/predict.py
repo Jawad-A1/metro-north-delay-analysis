@@ -23,6 +23,7 @@ BRANCHES = ["Harlem", "Hudson", "New Haven Mainline", "New Canaan", "Danbury", "
 
 
 def get_current_time(override: str | None = None) -> datetime:
+    """Return the current NY time, or a parsed override for testing."""
     if override:
         return datetime.fromisoformat(override).replace(tzinfo=NY_TZ)
     return datetime.now(NY_TZ)
@@ -45,6 +46,7 @@ def infer_period(now: datetime) -> str:
 
 
 def predict(branch: str, now: datetime, train_id: str | None = None) -> dict:
+    """Combine the live feed and historical trend into one result for a branch."""
     period = infer_period(now)
     hour = now.hour
 
@@ -73,6 +75,7 @@ def predict(branch: str, now: datetime, train_id: str | None = None) -> dict:
 
 
 def render(result: dict) -> str:
+    """Format a predict() result as human-readable CLI output."""
     lines = [
         f"Branch: {result['branch']}",
         f"Current time: {result['now']} (bucketed as {result['period']}, hour {result['hour']})",
@@ -121,6 +124,7 @@ def render(result: dict) -> str:
 
 
 def main():
+    """CLI entry point: parse args, run predict(), and print the result."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--branch", required=True, choices=BRANCHES)
     parser.add_argument("--train", default=None, help="Train ID/number to match in the live feed")

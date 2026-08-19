@@ -17,6 +17,7 @@ STOPS_CACHE_PATH = Path("data/mnr_stops.csv")
 
 
 def _fetch_and_cache_stop_names() -> dict[str, str]:
+    """Download the static GTFS bundle, extract stop names, and cache them to disk."""
     response = requests.get(STATIC_GTFS_URL, timeout=30)
     response.raise_for_status()
 

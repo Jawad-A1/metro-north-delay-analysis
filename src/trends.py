@@ -16,6 +16,7 @@ RISK_TIERS = ["Low", "Medium", "High", "Very High"]
 
 
 def load_delay_data(csv_path: str = DATA_PATH) -> pd.DataFrame:
+    """Load the delay CSV and derive an hour-of-day column from Depart Time."""
     df = pd.read_csv(csv_path)
     df["Depart Time"] = pd.to_datetime(df["Depart Time"], errors="coerce")
     df["Hour"] = df["Depart Time"].dt.hour
@@ -40,7 +41,7 @@ def build_hourly_branch_period_stats(df: pd.DataFrame) -> pd.DataFrame:
 
     grouped["risk_tier"] = pd.cut(
         grouped["risk_score"],
-        bins=[-0.001, 0.25, 0.5, 0.75, 1.0],
+        bins=[-0.001, 0.25, 0.5, 0.75, 1.0],  # -0.001 so a risk_score of exactly 0 falls in "Low"
         labels=RISK_TIERS,
     )
     return grouped

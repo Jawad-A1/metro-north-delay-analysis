@@ -36,18 +36,21 @@ st.caption(f"Bucketed as **{period}**, hour {hour}")
 
 @st.cache_data(ttl=LIVE_REFRESH_SECONDS)
 def get_live_delays(branch: str):
+    """Fetch the live GTFS feed and return current delays for a branch."""
     feed = fetch_feed()
     return find_live_delays(feed, branch=branch)
 
 
 @st.cache_data(ttl=3600)
 def get_historical_stats():
+    """Load and aggregate the historical delay-risk stats, cached for an hour."""
     df = trends.load_delay_data()
     return trends.build_hourly_branch_period_stats(df)
 
 
 @st.cache_data(ttl=86400)
 def get_stop_names():
+    """Load the stop_id -> stop_name mapping, cached for a day."""
     return load_stop_names()
 
 
@@ -72,7 +75,7 @@ def render_live_status(branch: str) -> None:
         header_col, refresh_col = st.columns([4, 1])
         header_col.subheader("Live status")
         if refresh_col.button("↻ Refresh", width="stretch"):
-            get_live_delays.clear()
+            get_live_delays.clear()  # bust the TTL cache so this click fetches fresh data
             live_now = get_current_time()
         st.caption(
             f"Auto-refreshes every {LIVE_REFRESH_SECONDS}s — last checked "

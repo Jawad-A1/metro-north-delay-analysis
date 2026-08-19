@@ -36,6 +36,7 @@ class MtaLiveError(RuntimeError):
 
 
 def fetch_feed(timeout: float = 10.0) -> gtfs_realtime_pb2.FeedMessage:
+    """Fetch and parse the live GTFS-realtime trip-update feed."""
     try:
         response = requests.get(FEED_URL, timeout=timeout)
         response.raise_for_status()
@@ -89,6 +90,7 @@ def find_live_delays(
 
         for stop_time_update in trip_update.stop_time_update:
             event = None
+            # Prefer arrival delay; fall back to departure when arrival isn't populated.
             if stop_time_update.HasField("arrival") and stop_time_update.arrival.HasField("delay"):
                 event = stop_time_update.arrival
             elif stop_time_update.HasField("departure") and stop_time_update.departure.HasField("delay"):
@@ -143,10 +145,13 @@ def next_stop_per_trip(live_delays: list[dict], now: datetime) -> list[dict]:
         candidate_upcoming = candidate_time >= now
         current_upcoming = current_time >= now
         if candidate_upcoming and not current_upcoming:
+            # An upcoming stop always beats one already in the past.
             best[trip_id] = d
         elif candidate_upcoming and current_upcoming and candidate_time < current_time:
+            # Between two upcoming stops, keep the soonest one.
             best[trip_id] = d
         elif not candidate_upcoming and not current_upcoming and candidate_time > current_time:
+            # Both already passed: keep the most recent as the fallback.
             best[trip_id] = d
     return list(best.values())
 
