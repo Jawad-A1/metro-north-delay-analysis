@@ -16,6 +16,7 @@ from src.theme import CATEGORICAL, INK, INK_SECONDARY, STATUS, apply_plotly_them
 
 PERIOD_ORDER = ["AM Peak", "PM Peak", "Off-Peak"]
 PERIOD_COLORS = dict(zip(PERIOD_ORDER, CATEGORICAL))
+LIVE_REFRESH_SECONDS = 30
 
 apply_plotly_theme()
 
@@ -24,19 +25,17 @@ st.set_page_config(page_title="Metro-North Delay Predictor", page_icon="🚆", l
 st.title("🚆 Metro-North Delay Predictor")
 st.caption("Live MTA status plus a historical delay-risk trend, side by side.")
 
-col_branch, col_refresh = st.columns([3, 1])
-branch = col_branch.selectbox("Branch", BRANCHES, label_visibility="collapsed")
-refresh = col_refresh.button("↻ Refresh", width="stretch")
+branch = st.selectbox("Branch", BRANCHES)
 
 now = get_current_time()
 period = infer_period(now)
 hour = now.hour
 
-st.caption(f"As of {now.strftime('%a %b %d, %I:%M %p')} — bucketed as **{period}**, hour {hour}")
+st.caption(f"Bucketed as **{period}**, hour {hour}")
 
 
-@st.cache_data(ttl=30)
-def get_live_delays(branch: str, _cache_bust: int):
+@st.cache_data(ttl=LIVE_REFRESH_SECONDS)
+def get_live_delays(branch: str):
     feed = fetch_feed()
     return find_live_delays(feed, branch=branch)
 
@@ -66,35 +65,48 @@ def _minutes_late_wash(value: float) -> str:
     return f"background-color: {bg}1f;"
 
 
-with st.container(border=True):
-    st.subheader("Live status")
-    try:
-        cache_bust = 0 if not refresh else pd.Timestamp.now().value
-        live_delays = get_live_delays(branch, cache_bust)
-        if live_delays:
-            stop_names = get_stop_names()
-            next_stops = next_stop_per_trip(live_delays, now)
-            live_df = pd.DataFrame(
-                [
-                    {
-                        "Train": d["train_label"] or d["trip_id"],
-                        "Next stop": stop_names.get(d["stop_id"], d["stop_id"]),
-                        "Scheduled": format_time(d["scheduled_time"]) if d["scheduled_time"] else "—",
-                        "Estimated": format_time(d["estimated_time"]) if d["estimated_time"] else "—",
-                        "Minutes late": d["delay_minutes"],
-                    }
-                    for d in next_stops
-                ]
-            ).sort_values("Minutes late", ascending=False)
+@st.fragment(run_every=LIVE_REFRESH_SECONDS)
+def render_live_status(branch: str) -> None:
+    live_now = get_current_time()
+    with st.container(border=True):
+        header_col, refresh_col = st.columns([4, 1])
+        header_col.subheader("Live status")
+        if refresh_col.button("↻ Refresh", width="stretch"):
+            get_live_delays.clear()
+            live_now = get_current_time()
+        st.caption(
+            f"Auto-refreshes every {LIVE_REFRESH_SECONDS}s — last checked "
+            f"{live_now.strftime('%I:%M:%S %p')}"
+        )
+        try:
+            live_delays = get_live_delays(branch)
+            if live_delays:
+                stop_names = get_stop_names()
+                next_stops = next_stop_per_trip(live_delays, live_now)
+                live_df = pd.DataFrame(
+                    [
+                        {
+                            "Train": d["train_label"] or d["trip_id"],
+                            "Next stop": stop_names.get(d["stop_id"], d["stop_id"]),
+                            "Scheduled": format_time(d["scheduled_time"]) if d["scheduled_time"] else "—",
+                            "Estimated": format_time(d["estimated_time"]) if d["estimated_time"] else "—",
+                            "Minutes late": d["delay_minutes"],
+                        }
+                        for d in next_stops
+                    ]
+                ).sort_values("Minutes late", ascending=False)
 
-            col_count, col_table = st.columns([1, 4])
-            col_count.metric("Delayed trains", len(live_df))
-            styled = live_df.style.map(_minutes_late_wash, subset=["Minutes late"])
-            col_table.dataframe(styled, hide_index=True, width="stretch")
-        else:
-            st.success(f"No active delays reported for {branch} right now.")
-    except MtaLiveError as exc:
-        st.error(f"Live feed unavailable: {exc}")
+                col_count, col_table = st.columns([1, 4])
+                col_count.metric("Delayed trains", len(live_df))
+                styled = live_df.style.map(_minutes_late_wash, subset=["Minutes late"])
+                col_table.dataframe(styled, hide_index=True, width="stretch")
+            else:
+                st.success(f"No active delays reported for {branch} right now.")
+        except MtaLiveError as exc:
+            st.error(f"Live feed unavailable: {exc}")
+
+
+render_live_status(branch)
 
 with st.container(border=True):
     st.subheader("Historical trend")
